@@ -1,0 +1,5 @@
+merged_data.json filter=lfs diff=lfs merge=lfs -text
+embedded_smartphones.json filter=lfs diff=lfs merge=lfs -text
+volumes/milvus/rdb_data/*.sst filter=lfs diff=lfs merge=lfs -text
+volumes/etcd/member/wal/*.tmp filter=lfs diff=lfs merge=lfs -text
+volumes/etcd/member/wal/*.wal filter=lfs diff=lfs merge=lfs -text

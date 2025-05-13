@@ -1,0 +1,49 @@
+# Large data files
+merged_data.json
+embedded_smartphones.json
+volumes/etcd/member/wal/0.tmp
+volumes/milvus/rdb_data/000321.sst
+volumes/milvus/rdb_data/000323.sst
+volumes/milvus/rdb_data/000324.sst
+volumes/etcd/member/wal/0000000000000000-0000000000000000.wal
+
+# Milvus data directories
+volumes/milvus/
+volumes/etcd/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environment
+venv/
+ENV/
+.env
+
+# IDE files
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Logs
+*.log
+logs/

@@ -1,0 +1,11 @@
+crewai
+langchain
+langchain-openai
+openai
+FlagEmbedding
+pymilvus
+streamlit
+python-dotenv
+numpy
+selenium
+scrappy
