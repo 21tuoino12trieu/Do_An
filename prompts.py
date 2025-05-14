@@ -47,96 +47,6 @@ Nhiệm vụ của bạn là:
     [Câu trả lời ngắn gọn câu hỏi gốc (tối đa 2 câu)] + [Câu/đoạn chuyển hướng tự nhiên] + [Câu kết thúc gợi mở/lời mời].
 """
 
-# Prompt để trích xuất nhiều tên sản phẩm từ câu hỏi so sánh
-EXTRACT_MULTIPLE_PRODUCTS_PROMPT = """
-Từ câu hỏi so sánh sau, xác định chính xác tên các sản phẩm được so sánh:
-
-"{clarified_query}"
-
-1. Xác định tên đầy đủ của từng sản phẩm, bao gồm cả thương hiệu, dòng sản phẩm, phiên bản
-2. Loại bỏ các từ không phải là một phần của tên sản phẩm
-3. Phân biệt rõ ràng các sản phẩm riêng biệt
-
-Ví dụ:
-- Từ "so sánh iPhone 13 Pro Max và Samsung Galaxy S22 Ultra" → ["iPhone 13 Pro Max", "Samsung Galaxy S22 Ultra"]
-- Từ "iPhone 14 tốt hơn Xiaomi 13 không?" → ["iPhone 14", "Xiaomi 13"]
-
-Trả về danh sách các sản phẩm định dạng JSON, chỉ các tên sản phẩm:
-"""
-
-# Prompt để xác định các trường cần so sánh
-IDENTIFY_COMPARISON_FIELDS_PROMPT = """
-Phân tích câu hỏi so sánh sau và xác định các trường thông tin cần so sánh:
-
-"{clarified_query}"
-
-Các trường có sẵn:
-- product_info: Thông tin chung về sản phẩm
-- warranty: Thông tin bảo hành
-- technical: Thông số kỹ thuật
-- feature: Tính năng nổi bật
-- content: Nội dung chi tiết về sản phẩm
-- full_promotion: Thông tin khuyến mãi
-
-Phân tích nội dung câu hỏi và xác định những trường thông tin liên quan để so sánh. 
-Nếu câu hỏi chỉ rõ khía cạnh so sánh (ví dụ: camera, pin, hiệu năng), hãy chọn các trường liên quan.
-Nếu câu hỏi chung chung, hãy chọn các trường phù hợp nhất.
-
-Trả về kết quả theo định dạng trường1,trường2,trường3. Không thêm giải thích hoặc văn bản khác:
-"""
-
-# Prompt để tóm tắt thông số kỹ thuật
-SUMMARIZE_TECHNICAL_PROMPT = """
-Từ thông số kỹ thuật sau, rút ra 3-5 chỉ số quan trọng nhất dưới dạng danh sách ngắn gọn:
-
-{full_info}
-
-Kết quả:
-"""
-
-# Prompt để tóm tắt tính năng nổi bật
-SUMMARIZE_FEATURE_PROMPT = """
-Từ các tính năng sau, liệt kê 2-3 tính năng nổi bật nhất, ngắn gọn:
-
-{full_info}
-
-Kết quả:
-"""
-
-# Prompt để tóm tắt thông tin chung
-SUMMARIZE_GENERAL_INFO_PROMPT = """
-Tóm tắt thông tin sau thành 2-3 điểm chính, ngắn gọn:
-
-{full_info}
-
-Kết quả:
-"""
-
-# Prompt để tạo câu trả lời cho câu hỏi so sánh
-COMPARISON_RESPONSE_PROMPT = """
-Tạo câu trả lời so sánh các sản phẩm:
-
-Câu hỏi gốc: "{original_query}"
-Câu hỏi đã làm rõ: "{clarified_query}"
-Sản phẩm so sánh: {products}
-Các tiêu chí so sánh: {fields}
-
-Dữ liệu so sánh:
-{comparison_data}
-
-Hãy tạo một câu trả lời chi tiết so sánh các sản phẩm theo các tiêu chí đã nêu. Câu trả lời cần:
-
-1. Mở đầu bằng việc xác nhận các sản phẩm được so sánh
-2. So sánh chi tiết từng sản phẩm theo từng tiêu chí, nêu rõ điểm mạnh/yếu
-3. Đưa ra đánh giá khách quan về ưu/nhược điểm của từng sản phẩm
-4. Nêu rõ sản phẩm nào phù hợp cho những nhu cầu cụ thể
-5. Kết luận với lời khuyên tổng quan
-
-Giữ câu trả lời khách quan, không thiên vị, dễ hiểu và hữu ích cho người dùng.
-"""
-
-# giới thiệu cho tôi về Tai nghe Bluetooth chụp tai OneOdio A10
-
 # Prompt làm rõ câu hỏi người dùng
 QUERY_CLARIFICATION_PROMPT = """
 Với vai trò là bộ xử lý và làm rõ truy vấn chuyên biệt cho hệ thống Tìm kiếm Tăng cường (RAG), nhiệm vụ của bạn là phân tích truy vấn thô của người dùng và biến nó thành một truy vấn tối ưu nhất để hệ thống có thể tìm kiếm các tài liệu liên quan một cách chính xác.
@@ -231,6 +141,7 @@ Ví dụ:
 - Từ "tư vấn tai nghe SoundPeats Air3 Deluxe HS" → "SoundPeats Air3 Deluxe HS"
 - Từ "thông số kỹ thuật iPhone 13 Pro Max" → "iPhone 13 Pro Max"
 - Từ "Samsung Galaxy S22 Ultra mua ở đâu" → "Samsung Galaxy S22 Ultra"
+- Từ "Máy Tính Bảng Lenovo Tab M11 Wifi 8GB 128GB ZADB0162VN" -> "Lenovo Tab M11 Wifi 8GB 128GB ZADB0162VN"
 
 **Yêu Cầu Đầu Ra BẮT BUỘC:**
 Chỉ trả về **duy nhất tên sản phẩm** đã trích xuất. Không thêm bất kỳ văn bản giới thiệu, giải thích, dấu câu trang trí, hoặc ký tự nào khác.
@@ -272,25 +183,18 @@ Bảng products có cấu trúc như sau:
 - product_name: TEXT (tên sản phẩm)
 - price: TEXT (giá sản phẩm, ví dụ: "5.990.000₫")
 - address: TEXT (địa chỉ cửa hàng)
-- map: TEXT (HTML code của Google Maps)
 - category: TEXT (loại sản phẩm: smartphone, tablet, laptop, earphone, speaker, watch)
 
 Phân tích câu hỏi để xác định loại truy vấn:
 
 1. Nếu là câu hỏi về địa chỉ/cửa hàng:
    - Tìm tất cả cửa hàng có bán sản phẩm này
-   - Bảo đảm kết quả trả về gồm product_name, price, address và map
+   - Bảo đảm kết quả trả về gồm product_name, address
 
 2. Nếu là câu hỏi về giá:
    - Tìm thông tin giá của sản phẩm
    - Bảo đảm kết quả trả về gồm product_name, price
    - Chỉ lấy distinct product_name và price (không cần nhiều địa chỉ)
-
-3. Nếu là câu hỏi về số lượng sản phẩm theo khoảng giá:
-   - Phân tích câu hỏi để xác định khoảng giá (nếu có)
-   - Thêm điều kiện WHERE cho price 
-   - Sử dụng GROUP BY product_name để tránh trùng lặp
-   - Bảo đảm kết quả trả về gồm product_name, price, category
 
 Lưu ý:
 - Sử dụng LIKE thay vì = khi tìm kiếm tên sản phẩm, và nhớ thêm % vào đầu và cuối, ví dụ: WHERE product_name LIKE '%iPhone 13%'
@@ -365,21 +269,13 @@ Phân tích câu hỏi để xác định loại truy vấn và tạo câu trả
 
 1. Nếu là câu hỏi về địa chỉ/cửa hàng:
    - Xác nhận tên sản phẩm
-   - Nêu rõ giá của sản phẩm nếu có trong kết quả
    - Liệt kê các địa điểm bán theo cách dễ đọc, đánh số thứ tự
-   - Nhắc người dùng có thể xem vị trí trên bản đồ: "Bạn có thể xem vị trí cửa hàng trên bản đồ bên dưới"
-   - Nếu không có địa điểm nào: "Hiện tại không tìm thấy thông tin về địa điểm bán sản phẩm này"
+
 
 2. Nếu là câu hỏi về giá:
    - Xác nhận tên sản phẩm chính xác
    - Trả lời rõ ràng: "Giá của [sản phẩm] là [giá]"
-   - Nếu không có thông tin giá: "Hiện tại không tìm thấy thông tin về giá của sản phẩm này"
 
-3. Nếu là câu hỏi về số lượng sản phẩm theo khoảng giá:
-   - Nêu rõ số lượng sản phẩm tìm thấy
-   - Liệt kê danh sách sản phẩm theo thứ tự giá, từ thấp đến cao
-   - Mỗi sản phẩm bao gồm tên và giá
-   - Kết luận ngắn gọn về khoảng giá và loại sản phẩm
 
 Sắp xếp thông tin theo cách dễ đọc. Câu trả lời phải ngắn gọn, không lặp lại thông tin không cần thiết, và tập trung vào việc cung cấp thông tin chính xác theo yêu cầu của người dùng.
 """
