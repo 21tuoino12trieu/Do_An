@@ -15,12 +15,6 @@ from prompts import (
     GENERAL_RESPONSE_GENERATION_PROMPT,
     SPECIFIC_VECTOR_RESPONSE_PROMPT,
     SPECIFIC_SQL_RESPONSE_PROMPT,
-    COMPARISON_RESPONSE_PROMPT,
-    EXTRACT_MULTIPLE_PRODUCTS_PROMPT,
-    IDENTIFY_COMPARISON_FIELDS_PROMPT,
-    SUMMARIZE_FEATURE_PROMPT,
-    SUMMARIZE_TECHNICAL_PROMPT,
-    SUMMARIZE_GENERAL_INFO_PROMPT,
 )
 
 
@@ -49,15 +43,29 @@ class DirectRAG:
 
         print("DirectRAG đã khởi tạo thành công")
 
-    def call_openai(self, prompt, temperature=0.1, model="gpt-4o"):
+    def call_openai(self, prompt, temperature=0.1, model="gpt-4o", stream=False, callback=None):
         """Gọi OpenAI API"""
         try:
             response = self.client.chat.completions.create(
                 model=model,
                 messages=[{"role": "user", "content": prompt}],
                 temperature=temperature,
+                stream=stream,
             )
-            return response.choices[0].message.content.strip()
+
+            if stream and callback:
+                # Xử lý streaming nếu được yêu cầu
+                full_response = ""
+                for chunk in response:
+                    if chunk.choices and len(chunk.choices) > 0:
+                        content = chunk.choices[0].delta.content
+                        if content:
+                            full_response += content
+                            callback(content)
+                return full_response
+            else:
+                # Xử lý không streaming như trước
+                return response.choices[0].message.content.strip()
         except Exception as e:
             print(f"Lỗi khi gọi OpenAI API: {e}")
             return f"Không thể nhận phản hồi từ AI: {str(e)}"
@@ -118,20 +126,6 @@ class DirectRAG:
         """Phân loại câu hỏi theo cấu trúc mới: GENERAL hoặc SPECIFIC-XXX"""
         prompt = QUERY_CLASSIFICATION_PROMPT.format(clarified_query=clarified_query)
         initial_classification = self.call_openai(prompt, temperature=0.1)
-
-        # Kiểm tra thứ cấp cho trường hợp hybrid
-        if initial_classification == "SPECIFIC-VECTOR":
-            # Kiểm tra xem trong câu hỏi có yếu tố liên quan đến SQL không
-            sql_terms = ["giá", "bao nhiêu", "cửa hàng", "địa điểm", "bán ở đâu", "mua ở đâu"]
-            if any(term in clarified_query.lower() for term in sql_terms):
-                return "SPECIFIC-HYBRID"
-
-        elif initial_classification == "SPECIFIC-SQL":
-            # Kiểm tra xem trong câu hỏi có yếu tố liên quan đến thông tin sản phẩm không
-            vector_terms = ["thông số", "tính năng", "đánh giá", "bảo hành", "khuyến mãi", "so sánh", "đặc điểm"]
-            if any(term in clarified_query.lower() for term in vector_terms):
-                return "SPECIFIC-HYBRID"
-
         return initial_classification
 
     def identify_general_field(self, clarified_query):
@@ -226,203 +220,6 @@ class DirectRAG:
         except Exception as e:
             print(f"❌ Lỗi trong perform_semantic_search: {e}")
             return []
-
-    def extract_multiple_products(self, clarified_query):
-        """Trích xuất nhiều tên sản phẩm từ câu hỏi so sánh"""
-        prompt = EXTRACT_MULTIPLE_PRODUCTS_PROMPT.format(clarified_query=clarified_query)
-        response = self.call_openai(prompt.format(clarified_query=clarified_query), temperature=0.1)
-
-        # Xử lý kết quả để lấy danh sách sản phẩm
-        try:
-            # Thử trích xuất trực tiếp nếu response là dạng JSON
-            import json
-            if "[" in response and "]" in response:
-                # Trích xuất phần JSON từ phản hồi
-                json_str = response[response.find("["):response.rfind("]") + 1]
-                products = json.loads(json_str)
-            else:
-                # Nếu không phải JSON, xử lý dạng văn bản
-                products = [p.strip() for p in response.split(",")]
-        except:
-            # Fallback nếu xử lý JSON thất bại
-            products = [p.strip() for p in response.replace("[", "").replace("]", "").replace("\"", "").split(",")]
-
-        # Đảm bảo trả về ít nhất 2 sản phẩm
-        if len(products) < 2:
-            print("Không thể trích xuất đủ sản phẩm để so sánh")
-            # Trích xuất sản phẩm bằng phương pháp khác
-            words = clarified_query.split()
-            for i in range(len(words)):
-                if words[i].lower() in ["với", "và", "hay", "hoặc", "or", "vs"]:
-                    if i > 0 and i < len(words) - 1:
-                        # Giả định các từ trước và sau kết nối là tên sản phẩm
-                        products = [" ".join(words[:i]), " ".join(words[i + 1:])]
-                        break
-
-        return products
-
-    def identify_comparison_fields(self, clarified_query):
-        """Xác định các trường cần so sánh giữa các sản phẩm"""
-        prompt = IDENTIFY_COMPARISON_FIELDS_PROMPT.format(clarified_query=clarified_query)
-        response = self.call_openai(prompt.format(clarified_query=clarified_query), temperature=0.1)
-
-        # Xử lý kết quả để lấy danh sách các trường
-        fields = [field.strip() for field in response.split(",")]
-
-        # Kiểm tra tính hợp lệ của các trường
-        valid_fields = ["product_info", "warranty", "technical", "feature", "content", "full_promotion"]
-        fields = [field for field in fields if field in valid_fields]
-
-        # Nếu không có trường nào hợp lệ, sử dụng các trường mặc định
-        if not fields:
-            fields = ["technical", "feature", "product_info"]
-
-        return fields
-
-    def _collect_product_information(self, product_name, fields):
-        """Thu thập thông tin cho một sản phẩm từ các trường cụ thể"""
-        # 1. Tìm kiếm sản phẩm theo tên để xác nhận
-        product_search_results = self.perform_semantic_search(product_name, "product_name", top_k=3)
-
-        if not product_search_results:
-            print(f"Không tìm thấy thông tin về sản phẩm {product_name}")
-            return {field: f"Không tìm thấy thông tin về {product_name}" for field in fields}
-
-        # 2. Chọn sản phẩm phù hợp nhất (điểm cao nhất)
-        best_match = product_search_results[0]
-        actual_product_name = best_match["product_name"]
-        print(f"Sản phẩm phù hợp nhất cho '{product_name}': {actual_product_name}")
-
-        # 3. Thu thập thông tin từ các trường dữ liệu cần thiết
-        field_results = {
-            "product_name": actual_product_name  # Luôn bao gồm tên sản phẩm thực tế
-        }
-
-        # Sử dụng query trực tiếp thay vì semantic search
-        for field in fields:
-            try:
-                collection = self.collections[field]
-
-                # Truy vấn trực tiếp sử dụng tên sản phẩm chính xác
-                query_expr = f'product_name == "{actual_product_name}"'
-                print(f"Truy vấn trực tiếp collection {field} với điều kiện: {query_expr}")
-
-                results = collection.query(
-                    expr=query_expr,
-                    output_fields=["product_name", "chunk_id", "text_data"]
-                )
-
-                if results:
-                    field_results[field] = results[0]["text_data"]
-                    print(f"Tìm thấy thông tin {field} cho {actual_product_name}")
-                else:
-                    print(f"Không tìm thấy thông tin {field} cho {actual_product_name}")
-                    field_results[field] = f"Không tìm thấy thông tin {field} cho sản phẩm {actual_product_name}"
-            except Exception as e:
-                print(f"Lỗi khi truy vấn collection {field}: {e}")
-                field_results[field] = f"Không thể lấy thông tin {field}"
-
-        # 4. Kiểm tra thông tin giá
-        if "price" not in field_results:
-            sql_results = self.execute_sql_query(f"Giá của {actual_product_name}", actual_product_name)
-            if sql_results and "price" in sql_results[0]:
-                field_results["price"] = sql_results[0]["price"]
-
-        return field_results
-
-    def _summarize_for_comparison(self, field, full_info):
-        """Tóm tắt thông tin từ một trường để hiển thị trong bảng so sánh"""
-        # Tùy thuộc vào trường, tóm tắt khác nhau
-        if field == "technical":
-            # Rút gọn thông số kỹ thuật, lấy các chỉ số quan trọng
-            prompt = SUMMARIZE_TECHNICAL_PROMPT.format(full_info=full_info)
-            return self.call_openai(prompt, temperature=0.1)
-
-        elif field == "feature":
-            # Lấy 2-3 tính năng nổi bật
-            prompt = SUMMARIZE_FEATURE_PROMPT.format(full_info=full_info)
-            return self.call_openai(prompt, temperature=0.1)
-
-        else:
-            # Tóm tắt thông tin chung thành 2-3 câu
-            if len(full_info) > 300:
-                prompt = SUMMARIZE_GENERAL_INFO_PROMPT.format(full_info=full_info)
-                return self.call_openai(prompt, temperature=0.1)
-            else:
-                return full_info
-
-    def _create_comparison_table(self, product_data, fields):
-        """Tạo bảng so sánh giữa các sản phẩm theo từng trường"""
-        comparison = "BẢNG SO SÁNH:\n\n"
-
-        # Tạo header cho bảng
-        products = list(product_data.keys())
-        comparison += "| Tiêu chí | " + " | ".join(products) + " |\n"
-        comparison += "| --- | " + " | ".join(["---" for _ in products]) + " |\n"
-
-        # Thêm dữ liệu cho từng trường
-        field_display_names = {
-            "product_info": "Thông tin chung",
-            "warranty": "Bảo hành",
-            "technical": "Thông số kỹ thuật",
-            "feature": "Tính năng nổi bật",
-            "content": "Mô tả chi tiết",
-            "full_promotion": "Khuyến mãi"
-        }
-
-        for field in fields:
-            display_name = field_display_names.get(field, field)
-            comparison += f"| {display_name} | "
-
-            for product in products:
-                if field in product_data[product] and product_data[product][field]:
-                    # Lấy phần tóm tắt ngắn gọn từ thông tin đầy đủ
-                    full_info = product_data[product][field]
-                    summary = self._summarize_for_comparison(field, full_info)
-                    comparison += f"{summary} | "
-                else:
-                    comparison += "Không có thông tin | "
-
-            comparison += "\n"
-
-        return comparison
-
-    def handle_comparison_query(self, original_query, clarified_query):
-        # 1. Trích xuất danh sách sản phẩm cần so sánh
-        product_names = self.extract_multiple_products(clarified_query)
-        print(f"Các sản phẩm cần so sánh: {product_names}")
-
-        # 2. Xác định các trường cần so sánh
-        fields = self.identify_comparison_fields(clarified_query)
-
-        # 3. Thu thập thông tin cho từng sản phẩm
-        product_data = {}
-        for product_name in product_names:
-            product_data[product_name] = self._collect_product_information(product_name, fields)
-
-        # 4. So sánh trực tiếp thông tin theo từng trường
-        comparison_data = self._create_comparison_table(product_data, fields)
-
-        # 5. Tạo phản hồi so sánh
-        prompt = COMPARISON_RESPONSE_PROMPT.format(
-            original_query=original_query,
-            clarified_query=clarified_query,
-            products=", ".join(product_names),
-            fields=", ".join(fields),
-            comparison_data=comparison_data
-        )
-
-        response = self.call_openai(prompt, temperature=0.7)
-
-        return {
-            "original_query": original_query,
-            "clarified_query": clarified_query,
-            "query_type": "COMPARISON",
-            "response": response,
-            "product_names": product_names,
-            "fields": fields,
-            "comparison_data": product_data
-        }
 
     def handle_general_query(self, original_query, clarified_query):
         """Xử lý câu hỏi chung chung về nhiều sản phẩm"""
@@ -636,13 +433,12 @@ class DirectRAG:
         Các loại:
         1. ADDRESS: Câu hỏi về địa chỉ, cửa hàng, nơi bán
         2. PRICE: Câu hỏi về giá cả của một sản phẩm cụ thể
-        3. COUNT: Câu hỏi về số lượng sản phẩm trong một khoảng giá
 
-        Trả về chỉ một trong ba giá trị: ADDRESS, PRICE hoặc COUNT
+        Trả về chỉ một trong ba giá trị: ADDRESS, PRICE 
         """
         result = self.call_openai(prompt.format(query=query), temperature=0.1)
         result = result.strip().upper()
-        if result not in ["ADDRESS", "PRICE", "COUNT"]:
+        if result not in ["ADDRESS", "PRICE"]:
             # Mặc định là ADDRESS nếu không xác định được
             return "ADDRESS"
         return result
@@ -974,10 +770,6 @@ class DirectRAG:
             if query_type == "GENERAL":
                 # Câu hỏi chung chung về nhiều sản phẩm
                 return self.handle_general_query(user_query, clarified_query)
-
-            elif query_type == "COMPARISON":
-                # Câu hỏi về việc so sánh giữa 2 sản phẩm
-                return self.handle_comparison_query(user_query, clarified_query)
 
             elif query_type == "SPECIFIC-VECTOR":
                 # Câu hỏi về một sản phẩm cụ thể, cần thông tin từ vector store
