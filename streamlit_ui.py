@@ -201,9 +201,13 @@ if prompt:
             # Lấy đối tượng RAG
             rag = st.session_state.rag
 
+            # Xử lí lí tham chiếu trong hội thoại
+            with st.spinner("Đang kiểm tra xem câu hỏi có dạng tham chiếu hay không..."):
+                resolved_query = rag._resolve_references(prompt)
+
             # Làm rõ câu hỏi
             with st.spinner("Đang làm rõ câu hỏi..."):
-                clarified_query = rag.clarify_query(prompt)
+                clarified_query = rag.clarify_query(resolved_query)
 
             # Phân loại domain
             domain_classification = rag.classify_query_domain(clarified_query)
@@ -218,6 +222,11 @@ if prompt:
                     stream=True,
                     callback=update_response
                 )
+                # Tổng thời gian truy vấn
+                processing_time = time.time() - start_time
+                print(f"Thời gian truy vấn: '{processing_time}")
+                rag._update_conversation_context(result)
+
             else:
                 # Phân loại loại câu hỏi
                 query_type = rag.classify_query(clarified_query)
@@ -233,6 +242,11 @@ if prompt:
                             stream=True,
                             callback=update_response
                         )
+                        # Tổng thời gian truy vấn
+                        processing_time = time.time() - start_time
+                        # Cập nhật ngữ cảnh hội thoại
+                        print(f"Thời gian truy vấn: '{processing_time}")
+                        rag._update_conversation_context(result)
 
                 elif "SPECIFIC" in query_type:
                     # Xử lý câu hỏi cụ thể
@@ -251,9 +265,12 @@ if prompt:
                             stream=True,
                             callback=update_response
                         )
+                        # Tổng thời gian truy vấn
+                        processing_time = time.time() - start_time
+                        # Cập nhật ngữ cảnh hội thoại
+                        print(f"Thời gian truy vấn: '{processing_time}")
+                        rag._update_conversation_context(result)
 
-            # Tính thời gian xử lý
-            response_time = time.time() - start_time
 
             # Tạo thông tin hiển thị ở footer
             query_type_display = {
@@ -261,7 +278,8 @@ if prompt:
                 "SPECIFIC-VECTOR": "Câu hỏi về thông tin sản phẩm cụ thể",
                 "SPECIFIC-SQL": "Câu hỏi về giá/địa điểm bán",
                 "SPECIFIC-HYBRID": "Câu hỏi kết hợp thông tin và giá/địa điểm",
-                "ERROR": "Lỗi xử lý"
+                "ERROR": "Lỗi xử lý",
+                "RESPONSE TIME": f"Thời gian truy vấn: {processing_time}"
             }
 
             query_type = result.get("query_type", "ERROR")
