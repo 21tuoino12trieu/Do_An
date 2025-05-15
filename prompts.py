@@ -83,12 +83,28 @@ Phân loại câu hỏi sau:
    Ví dụ: "Thông số kỹ thuật của iPhone 13", "Giá của tai nghe SoundPeats T3", "Đánh giá Samsung Galaxy S22"
 
 Nếu câu hỏi thuộc loại SPECIFIC, xác định thêm loại thông tin cần trả lời:
-   a. VECTOR: Thông tin về toàn bộ sản phẩm, thông số kỹ thuật, chính sách bảo hành, chính sách khuyến mãi ưu đãi, đặc điểm nổi bật, đánh giá chung  
-   b. SQL: Thông tin về giá cả, địa điểm bán, cửa hàng gần nhất, số lượng hàng còn lại. Bao gồm các câu hỏi như:
+   a. VECTOR: Thông tin về toàn bộ sản phẩm, thông số kỹ thuật, chính sách bảo hành, chính sách khuyến mãi ưu đãi, đặc điểm nổi bật, đánh giá chung. Ví dụ:
+      - "Thông số kỹ thuật của iPhone 13 là gì?"
+      - "Đánh giá chi tiết về Samsung Galaxy S22"
+      - "Tính năng nổi bật của tai nghe Sony WH-1000XM4"
+      - "Chế độ bảo hành của laptop Dell XPS 13"
+   
+   b. SQL: Thông tin về giá cả, địa điểm bán, cửa hàng gần nhất, số lượng hàng còn lại. Ví dụ:
       - Về địa chỉ: "Cửa hàng nào gần nhất có bán iPhone 14?", "Ở đâu bán Samsung S22?"
       - Về giá: "Giá của Xiaomi Redmi Note 11 là bao nhiêu?", "Tai nghe AirPods Pro 2 giá thế nào?"
       - Về số lượng sản phẩm: "Có bao nhiêu điện thoại trong tầm giá 5 triệu?", "Liệt kê laptop dưới 15 triệu"
-   c. HYBRID: Cần cả thông tin VECTOR và SQL
+   
+   c. HYBRID: Cần cả thông tin VECTOR và SQL. Câu hỏi yêu cầu đồng thời cả thông tin về sản phẩm (thông số, tính năng, đánh giá) VÀ thông tin về giá/địa điểm bán. Ví dụ:
+      - "Thông số kỹ thuật và giá của iPhone 13 Pro Max"
+      - "Đánh giá chi tiết và địa điểm bán Samsung Galaxy S22 Ultra"
+      - "Tính năng nổi bật và giá bán của tai nghe Sony WH-1000XM4"
+      - "Cấu hình và cửa hàng bán laptop Dell XPS 13"
+      - "Xiaomi Redmi Note 11 có những tính năng gì và mua ở đâu?"
+
+Quy tắc phân loại HYBRID:
+1. Câu hỏi phải đề cập rõ ràng đến MỘT sản phẩm cụ thể
+2. Câu hỏi phải yêu cầu ít nhất một loại thông tin thuộc nhóm VECTOR (thông số, tính năng, đánh giá...)
+3. Câu hỏi phải yêu cầu ít nhất một loại thông tin thuộc nhóm SQL (giá, địa điểm bán...)
 
 Trả về theo định dạng:
 GENERAL hoặc 
