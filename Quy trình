@@ -1,8 +1,55 @@
-tôi đang nghĩ nên giảm sự phức tạp của hệ thống hơn. Bây giờ tôi nghĩ hệ thống mình nên có 2 dạng câu hỏi chính: * *
-* *1 dạng là những câu hỏi chung chung kiểu như "Tư vấn cho tôi loại tai nghe có thiết kê đẹp, bền" hay như "Tư vấn cho tôi loại tại nghe có chính sách đổi trả" hoặc "Tư vấn cho tôi các dòng tai của hãng Sony", những dạng câu hỏi này mình sẽ trả thẳng về 1 trường cụ thể duy nhất sau đó thự hiện retrieve và rerank (loại câu hỏi 1 trả thẳng về content, loại 2 thì sẽ trả thẳng về bảo hành, loại 3 thì trả thẳng về product name) sau đó mình sẽ trả về list khoảng 5 sản phẩm *
-* 1 dạng là những câu hỏi về 1 sản phẩm cụ thể, ở dạng cụ thể này tôi nghĩ nên chia làm 3 dạng câu hỏi con: * *
-   * *1 dạng là hỏi về các thông tin trong trường cụ thể của collection ví dụ như "tôi muốn bạn tư vấn cho tôi về loại tai nghe Bluetooth True Wireless SoundPeats T3 Pro" mình sẽ semantic search theo product name và rerank, chỉ lấy ra kết quả cao nhất sau đó mình sẽ ánh xạ theo những trường thông tin còn lại trong collection, nếu trong câu hỏi có chỉ ra các trường thông tin cụ thể trong collection thì mình sẽ ánh xạ từ product name sang các trường thông tin cụ thể đó của chính sản phẩm đó rồi trả về kết quả *
-   * 1 dạng là câu hỏi về loại SQL như "Giá sản phẩm này là bao nhiêu" hay như "Sản phẩm này bán ở nhưng cửa hàng nào ?" những dạng câu hỏi này mình sẽ triển khai bằng các câu lệnh sql và truy vấn vào database trong sqlite3
-   * 1 dạng là câu hỏi về sql và thông tin hay còn được gọi là dạng HYBRD, lúc này mình sẽ semantic theo product name rồi retrive và rerank lấy ra 1 kết quả tốt nhất (kết quả này chính là product name) rồi ánh xạ theo các thông tin cần thiết trong collection và search trong sql theo yêu cầu trong câu hỏi về sản phẩm đó
+ tôi đang xây dựng một hệ thống RAG (Retrieval-Augmented Generation) để tư vấn về thiết bị di động. Tôi sẽ phân tích workflow tổng thể của hệ thống tôi đã triển khai.
+Tổng quan về workflow
+Hệ thống của tôi áp dụng một workflow khá toàn diện cho RAG, bao gồm các bước sau:
 
-hãy bóc tách thật mãnh mẽ để tạo ra các cặp câu hỏi thật đa dạng nhé, tạo ra càng nhiều câu hỏi càng tốt:
+Thu thập dữ liệu: Crawl dữ liệu từ các trang thương mại điện tử (smartphone, tablet, laptop, earphone, speakers, watches)
+Tiền xử lý dữ liệu: Làm sạch và cấu trúc hóa dữ liệu thông qua pre_processing_data.py
+Lưu trữ dữ liệu:
+
+Vector Store (Milvus) cho tìm kiếm ngữ nghĩa
+SQL Database (SQLite) cho truy vấn thuộc tính cụ thể (giá, địa điểm)
+
+
+Tạo vector embeddings: Sử dụng BGE-M3 model để tạo embeddings
+Xử lý truy vấn người dùng:
+
+Làm rõ câu hỏi
+Phân loại câu hỏi (SQL, RAG, HYBRID)
+Truy xuất thông tin phù hợp
+Tạo phản hồi
+
+
+Giao diện người dùng: Streamlit UI cho tương tác
+
+Phân tích chi tiết
+1. Cấu trúc dữ liệu
+tôi đã phân chia dữ liệu theo 7 khía cạnh (fields) khác nhau cho mỗi sản phẩm:
+
+product_name
+product_info
+warranty
+technical
+feature
+content
+full_promotion
+
+Cách tiếp cận này cho phép tìm kiếm ngữ nghĩa theo từng khía cạnh cụ thể, tăng độ chính xác.
+2. Kiến trúc Vector Store
+tôi sử dụng Milvus với index HNSW và Inner Product, đây là lựa chọn tốt cho tìm kiếm ngữ nghĩa hiệu quả.
+3. Quy trình xử lý truy vấn
+Hệ thống của tôi có một quy trình xử lý truy vấn khá phức tạp và thông minh:
+
+Làm rõ câu hỏi: Hiểu đúng ý định người dùng
+Phân loại truy vấn: SQL/RAG/HYBRID - đây là điểm rất hay, phù hợp với các loại câu hỏi khác nhau
+Xác định fields liên quan: Tìm kiếm thông tin trong các khía cạnh phù hợp nhất
+
+4. Tạo phản hồi
+tôi sử dụng LLM để tạo phản hồi cuối cùng, tổng hợp từ kết quả truy vấn.
+Đánh giá workflow
+Điểm mạnh
+
+Phân loại truy vấn thông minh: Phân biệt giữa SQL, RAG và HYBRID là một cách tiếp cận hiệu quả để xử lý các loại câu hỏi khác nhau.
+Tiền xử lý dữ liệu kỹ lưỡng: Code làm sạch văn bản rất cẩn thận, loại bỏ nhiều loại đặc biệt và định dạng dữ liệu chuẩn.
+Cấu trúc dữ liệu đa khía cạnh: Phân chia dữ liệu thành 7 fields giúp tìm kiếm chính xác hơn.
+Kết hợp cả SQL và Vector Search: Cách tiếp cận hybrid này rất hợp lý cho ứng dụng tư vấn thiết bị.
+Phương pháp reranking: Sử dụng reranker để đánh giá lại kết quả tìm kiếm.
