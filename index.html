@@ -1,0 +1,1294 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tư vấn thiết bị di động | RAG System</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/highlight.js@11.7.0/lib/core.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/highlight.js@11.7.0/lib/languages/python.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/highlight.js@11.7.0/lib/languages/javascript.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.7.0/styles/github-dark.min.css">
+    <style>
+        :root {
+            --primary-color: #4f46e5;
+            --primary-hover: #4338ca;
+            --secondary-color: #10b981;
+            --bg-color: #0f172a;
+            --bg-light: #1e293b;
+            --text-color: #f8fafc;
+            --text-secondary: #cbd5e1;
+            --border-color: #334155;
+            --placeholder-color: #94a3b8;
+            --user-message-bg: #2563eb;
+            --assistant-message-bg: #1e293b;
+            --error-color: #ef4444;
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Header styles */
+        .header {
+            background-color: var(--bg-light);
+            padding: 0.75rem 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .app-logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-weight: 600;
+            font-size: 1.125rem;
+        }
+
+        .logo-icon {
+            color: var(--primary-color);
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 0.75rem;
+        }
+
+        .action-button {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            border-radius: 0.375rem;
+            padding: 0.5rem 0.75rem;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .action-button:hover {
+            border-color: var(--primary-color);
+            background-color: rgba(79, 70, 229, 0.1);
+        }
+
+        .new-chat-btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+        }
+
+        .new-chat-btn:hover {
+            background-color: var(--primary-hover);
+        }
+
+        .system-status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            padding: 0.5rem 0.75rem;
+            background-color: var(--bg-color);
+            border-radius: 0.375rem;
+        }
+
+        .status-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: var(--success-color);
+        }
+
+        /* Main content styles */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            height: calc(100vh - 60px); /* Adjust for header height */
+            position: relative;
+        }
+
+        .chat-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 2rem 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            scroll-behavior: smooth;
+            height: calc(100vh - 160px); /* Điều chỉnh chiều cao cho phù hợp */
+            max-height: calc(100vh - 160px);
+        }
+
+        /* Tùy chỉnh thanh cuộn để trông đẹp hơn */
+        .chat-container::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        .chat-container::-webkit-scrollbar-track {
+            background: var(--bg-color);
+            border-radius: 4px;
+        }
+
+        .chat-container::-webkit-scrollbar-thumb {
+            background-color: var(--border-color);
+            border-radius: 4px;
+        }
+
+        .chat-container::-webkit-scrollbar-thumb:hover {
+            background-color: var(--primary-color);
+        }
+
+        .welcome-screen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            padding: 2rem;
+            text-align: center;
+            gap: 2rem;
+        }
+
+        .welcome-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+
+        .category-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            width: 100%;
+            max-width: 800px;
+        }
+
+        .category-card {
+            background-color: var(--bg-light);
+            border: 1px solid var(--border-color);
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+        }
+
+        .category-card:hover {
+            transform: translateY(-4px);
+            border-color: var(--primary-color);
+        }
+
+        .category-icon {
+            font-size: 2rem;
+            color: var(--primary-color);
+        }
+
+        .category-title {
+            font-weight: 600;
+        }
+
+        .category-description {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+
+        .message-row {
+            display: flex;
+            margin-bottom: 1rem;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .message {
+            max-width: 85%;
+            border-radius: 1rem;
+            padding: 1rem 1.25rem;
+            position: relative;
+            display: flex;
+            gap: 1rem;
+        }
+
+        .user-message {
+            background-color: var(--user-message-bg);
+            color: white;
+            margin-left: auto;
+            border-bottom-right-radius: 0.25rem;
+        }
+
+        .assistant-message {
+            background-color: var(--assistant-message-bg);
+            border: 1px solid var(--border-color);
+            margin-right: auto;
+            border-bottom-left-radius: 0.25rem;
+        }
+
+        .avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+
+        .user-avatar {
+            background-color: #3b82f6;
+        }
+
+        .assistant-avatar {
+            background-color: #475569;
+        }
+
+        .message-content {
+            flex: 1;
+            overflow-wrap: break-word;
+        }
+
+        .message-content a {
+            color: #93c5fd;
+            text-decoration: none;
+        }
+
+        .message-content a:hover {
+            text-decoration: underline;
+        }
+
+        .message-content p {
+            margin-bottom: 0.75rem;
+        }
+
+        .message-content p:last-child {
+            margin-bottom: 0;
+        }
+
+        .message-content ul, .message-content ol {
+            margin: 0.75rem 0;
+            padding-left: 1.5rem;
+        }
+
+        .message-content h1, .message-content h2, .message-content h3 {
+            margin: 1rem 0 0.5rem 0;
+            font-weight: 600;
+        }
+
+        .message-content h1 {
+            font-size: 1.5rem;
+        }
+
+        .message-content h2 {
+            font-size: 1.25rem;
+        }
+
+        .message-content h3 {
+            font-size: 1.125rem;
+        }
+
+        .message-content code {
+            background-color: rgba(0, 0, 0, 0.15);
+            padding: 0.1rem 0.3rem;
+            border-radius: 0.25rem;
+            font-family: monospace;
+            font-size: 0.9em;
+        }
+
+        .message-content pre {
+            background-color: #1a1a1a;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            overflow-x: auto;
+            margin: 0.75rem 0;
+        }
+
+        .message-content pre code {
+            background-color: transparent;
+            padding: 0;
+            border-radius: 0;
+            color: #e2e8f0;
+        }
+
+        .message-footer {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            margin-top: 0.75rem;
+            padding-top: 0.75rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .user-message .message-footer {
+            color: rgba(255, 255, 255, 0.7);
+            border-top-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .typing-indicator {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 1rem 1.25rem;
+            background-color: var(--assistant-message-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 1rem;
+            max-width: 85%;
+            margin-bottom: 1rem;
+            margin-right: auto;
+            border-bottom-left-radius: 0.25rem;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .typing-text {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .typing-dots {
+            display: flex;
+            gap: 0.25rem;
+        }
+
+        .typing-dot {
+            width: 8px;
+            height: 8px;
+            background-color: var(--primary-color);
+            border-radius: 50%;
+            animation: typingAnimation 1.5s infinite ease;
+        }
+
+        .typing-dot:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-dot:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes typingAnimation {
+            0%, 60%, 100% { transform: translateY(0); }
+            30% { transform: translateY(-5px); }
+        }
+
+        /* Input container styles */
+        .input-container {
+            padding: 1rem;
+            border-top: 1px solid var(--border-color);
+            background-color: var(--bg-color);
+            position: sticky;
+            bottom: 0;
+            z-index: 10;
+        }
+
+        .input-wrapper {
+            display: flex;
+            align-items: flex-end;
+            position: relative;
+            background-color: var(--bg-light);
+            border: 1px solid var(--border-color);
+            border-radius: 0.75rem;
+            transition: border-color 0.2s;
+            padding: 0.75rem;
+        }
+
+        .input-wrapper:focus-within {
+            border-color: var(--primary-color);
+        }
+
+        .chat-input {
+            flex: 1;
+            background-color: transparent;
+            border: none;
+            color: var(--text-color);
+            font-size: 1rem;
+            font-family: inherit;
+            resize: none;
+            min-height: 1.5rem;
+            max-height: 150px;
+            padding: 0.25rem 0;
+            overflow-y: auto;
+            outline: none;
+        }
+
+        .chat-input::placeholder {
+            color: var(--placeholder-color);
+        }
+
+        .input-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .send-button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 0.5rem;
+            padding: 0.5rem;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .send-button:hover {
+            background-color: var(--primary-hover);
+        }
+
+        .send-button:disabled {
+            background-color: var(--border-color);
+            cursor: not-allowed;
+        }
+
+        .input-info {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            margin-top: 0.5rem;
+            padding: 0 0.5rem;
+        }
+
+        /* Map container */
+        .map-container {
+            margin-top: 1rem;
+            border-radius: 0.5rem;
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+            background-color: #fff;
+        }
+
+        .map-container iframe {
+            width: 100%;
+            height: 300px;
+            border: none;
+        }
+
+        /* Loading screen */
+        .loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: var(--bg-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 50;
+        }
+
+        .loader {
+            width: 48px;
+            height: 48px;
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            border-top-color: var(--primary-color);
+            animation: spin 1s linear infinite;
+            margin-bottom: 1.5rem;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Mobile responsive styles */
+        @media (max-width: 768px) {
+            .header {
+                padding: 0.75rem 1rem;
+            }
+
+            .app-logo span {
+                display: none;
+            }
+
+            .header-actions {
+                gap: 0.5rem;
+            }
+
+            .action-button {
+                padding: 0.5rem;
+            }
+
+            .action-button span {
+                display: none;
+            }
+
+            .message {
+                max-width: 90%;
+            }
+
+            .category-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .welcome-title {
+                font-size: 1.75rem;
+            }
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background-color: rgba(203, 213, 225, 0.3);
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background-color: rgba(203, 213, 225, 0.5);
+        }
+
+        /* Utility classes */
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div id="loading-screen" class="loading-screen">
+        <div class="loader"></div>
+        <p>Đang khởi tạo hệ thống tư vấn...</p>
+    </div>
+
+    <!-- Header -->
+    <header class="header">
+        <div class="app-logo">
+            <svg class="logo-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M20 14.5V9.5C20 8.4 19.1 7.5 18 7.5H6C4.9 7.5 4 8.4 4 9.5V14.5C4 15.6 4.9 16.5 6 16.5H18C19.1 16.5 20 15.6 20 14.5ZM9.5 12C9.5 12.83 8.83 13.5 8 13.5C7.17 13.5 6.5 12.83 6.5 12C6.5 11.17 7.17 10.5 8 10.5C8.83 10.5 9.5 11.17 9.5 12ZM16 11.78C16 12.45 15.44 13 14.75 13H11.25C10.56 13 10 12.45 10 11.78V11.72C10 11.05 10.56 10.5 11.25 10.5H14.75C15.44 10.5 16 11.05 16 11.72V11.78Z" fill="currentColor"/>
+                <path d="M12 2L6 7H18L12 2Z" fill="currentColor"/>
+                <path d="M12 22L6 17H18L12 22Z" fill="currentColor"/>
+            </svg>
+            <span>Mobile Device RAG System</span>
+        </div>
+
+        <div class="header-actions">
+            <div class="system-status">
+                <div id="status-indicator" class="status-indicator"></div>
+                <span id="status-text">Hệ thống hoạt động bình thường</span>
+            </div>
+
+            <button id="check-status-btn" class="action-button">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M9 12L11 14L15 10M12 3C7.02944 3 3 7.02944 3 12C3 16.9706 7.02944 21 12 21C16.9706 21 21 16.9706 21 12C21 7.02944 16.9706 3 12 3Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <span>Kiểm tra hệ thống</span>
+            </button>
+
+            <button id="clear-history-btn" class="action-button">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M3 6H5H21M19 6V20C19 20.5304 18.7893 21.0391 18.4142 21.4142C18.0391 21.7893 17.5304 22 17 22H7C6.46957 22 5.96086 21.7893 5.58579 21.4142C5.21071 21.0391 5 20.5304 5 20V6M8 6V4C8 3.46957 8.21071 2.96086 8.58579 2.58579C8.96086 2.21071 9.46957 2 10 2H14C14.5304 2 15.0391 2.21071 15.4142 2.58579C15.7893 2.96086 16 3.46957 16 4V6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M10 11V17M14 11V17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <span>Xóa lịch sử</span>
+            </button>
+
+            <button id="new-chat-btn" class="action-button new-chat-btn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 5V19M5 12H19" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <span>Cuộc trò chuyện mới</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Welcome Screen -->
+        <div id="welcome-screen" class="welcome-screen">
+            <div>
+                <h1 class="welcome-title">Tư vấn thiết bị di động</h1>
+            </div>
+
+            <div class="category-grid">
+                <div class="category-card" data-category="smartphone">
+                    <div class="category-icon">📱</div>
+                    <h3 class="category-title">Smartphone</h3>
+                    <p class="category-description">Thông tin về điện thoại thông minh</p>
+                </div>
+
+                <div class="category-card" data-category="tablet">
+                    <div class="category-icon">📟</div>
+                    <h3 class="category-title">Tablet</h3>
+                    <p class="category-description">Máy tính bảng các loại</p>
+                </div>
+
+                <div class="category-card" data-category="laptop">
+                    <div class="category-icon">💻</div>
+                    <h3 class="category-title">Laptop</h3>
+                    <p class="category-description">Máy tính xách tay</p>
+                </div>
+
+                <div class="category-card" data-category="earphone">
+                    <div class="category-icon">🎧</div>
+                    <h3 class="category-title">Tai nghe</h3>
+                    <p class="category-description">Tai nghe có dây và không dây</p>
+                </div>
+
+                <div class="category-card" data-category="speaker">
+                    <div class="category-icon">🔊</div>
+                    <h3 class="category-title">Loa</h3>
+                    <p class="category-description">Loa bluetooth và loa di động</p>
+                </div>
+
+                <div class="category-card" data-category="watch">
+                    <div class="category-icon">⌚</div>
+                    <h3 class="category-title">Đồng hồ</h3>
+                    <p class="category-description">Đồng hồ thông minh</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chat Container -->
+        <div id="chat-container" class="chat-container hidden">
+            <!-- Messages will be added here -->
+        </div>
+
+        <!-- Typing Indicator -->
+        <div id="typing-indicator" class="typing-indicator hidden">
+            <div class="avatar assistant-avatar">
+                <svg width="20" height="20" viewBox="0 0 41 41" fill="none" xmlns="http://www.w3.org/2000/svg" stroke-width="1.5" class="h-6 w-6">
+                    <path d="M37.5324 16.8707C37.9808 15.5241 38.1363 14.0974 37.9886 12.6859C37.8409 11.2744 37.3934 9.91076 36.676 8.68622C35.6126 6.83404 33.9882 5.3676 32.0373 4.4985C30.0864 3.62941 27.9098 3.40259 25.8215 3.85078C24.8796 2.7893 23.7219 1.94125 22.4257 1.36341C21.1295 0.785575 19.7249 0.491269 18.3058 0.500197C16.1708 0.495044 14.0893 1.16803 12.3614 2.42214C10.6335 3.67624 9.34853 5.44666 8.6917 7.47815C7.30085 7.76286 5.98686 8.3414 4.8377 9.17505C3.68854 10.0087 2.73073 11.0782 2.02839 12.312C0.956464 14.1591 0.498905 16.2988 0.721698 18.4228C0.944492 20.5467 1.83612 22.5449 3.268 24.1293C2.81966 25.4759 2.66413 26.9026 2.81182 28.3141C2.95951 29.7256 3.40701 31.0892 4.12437 32.3138C5.18791 34.1659 6.8123 35.6322 8.76321 36.5013C10.7141 37.3704 12.8907 37.5973 14.9789 37.1492C15.9208 38.2107 17.0786 39.0587 18.3747 39.6366C19.6709 40.2144 21.0755 40.5087 22.4946 40.4998C24.6307 40.5054 26.7133 39.8321 28.4418 38.5772C30.1704 37.3223 31.4556 35.5506 32.1119 33.5179C33.5027 33.2332 34.8167 32.6547 35.9659 31.821C37.115 30.9874 38.0728 29.9178 38.7752 28.684C39.8458 26.8371 40.3023 24.6979 40.0789 22.5748C39.8556 20.4517 38.9639 18.4544 37.5324 16.8707ZM22.4978 37.8849C20.7443 37.8874 19.0459 37.2733 17.6994 36.1501C17.7601 36.117 17.8666 36.0586 17.936 36.0161L25.9004 31.4156C26.1003 31.3019 26.2663 31.137 26.3813 30.9378C26.4964 30.7386 26.5563 30.5124 26.5549 30.2825V19.0542L29.9213 20.998C29.9389 21.0068 29.9541 21.0198 29.9656 21.0359C29.977 21.052 29.9842 21.0707 29.9867 21.0902V30.3889C29.9842 32.375 29.1946 34.2791 27.7909 35.6841C26.3872 37.0892 24.4838 37.8806 22.4978 37.8849Z" fill="currentColor"></path>
+                </svg>
+            </div>
+            <div class="typing-text">Đang xử lý...</div>
+            <div class="typing-dots">
+                <div class="typing-dot"></div>
+                <div class="typing-dot"></div>
+                <div class="typing-dot"></div>
+            </div>
+        </div>
+
+        <!-- Input Container -->
+        <div class="input-container">
+            <div class="input-wrapper">
+                <textarea id="chat-input" class="chat-input" placeholder="Nhập câu hỏi của bạn..." rows="1"></textarea>
+                <div class="input-actions">
+                    <button id="send-button" class="send-button" aria-label="Gửi">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M22 2L11 13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M22 2L15 22L11 13L2 9L22 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            <div class="input-info">
+                <span id="input-status"></span>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Configuration
+        const API_URL = 'http://localhost:5000/api';
+        const DEBUG_MODE = false; // Set to true to enable debug logs
+
+        // Generate a session ID for this conversation
+        const SESSION_ID = 'session_' + Math.random().toString(36).substring(2, 15);
+
+        // DOM Elements
+        const loadingScreen = document.getElementById('loading-screen');
+        const welcomeScreen = document.getElementById('welcome-screen');
+        const chatContainer = document.getElementById('chat-container');
+        const chatInput = document.getElementById('chat-input');
+        const sendButton = document.getElementById('send-button');
+        const newChatBtn = document.getElementById('new-chat-btn');
+        const clearHistoryBtn = document.getElementById('clear-history-btn');
+        const checkStatusBtn = document.getElementById('check-status-btn');
+        const typingIndicator = document.getElementById('typing-indicator');
+        const inputStatus = document.getElementById('input-status');
+        const statusIndicator = document.getElementById('status-indicator');
+        const statusText = document.getElementById('status-text');
+        const categoryCards = document.querySelectorAll('.category-card');
+
+        // State
+        let isProcessing = false;
+        let chatStarted = false;
+        let systemReady = false;
+        let conversationHistory = [];
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', initialize);
+
+        // Event Listeners
+        chatInput.addEventListener('keydown', handleInputKeydown);
+        chatInput.addEventListener('input', autoResizeTextarea);
+        sendButton.addEventListener('click', sendMessage);
+        newChatBtn.addEventListener('click', startNewChat);
+        clearHistoryBtn.addEventListener('click', clearHistory);
+        checkStatusBtn.addEventListener('click', checkSystemStatus);
+
+        // Add event listeners to category cards
+        categoryCards.forEach(card => {
+            card.addEventListener('click', () => {
+                const category = card.getAttribute('data-category');
+                chatInput.value = `Tôi đang tìm kiếm ${category}`;
+                startChat();
+                chatInput.focus();
+            });
+        });
+
+        /**
+         * Initialize the application
+         */
+        async function initialize() {
+            try {
+                // Check system status
+                const response = await fetch(`${API_URL}/health`);
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    systemReady = true;
+                    updateSystemStatus(true);
+
+                    // Hide loading screen
+                    loadingScreen.classList.add('hidden');
+
+                    // Add welcome message when starting new chat
+                    addBotMessage({
+                        response: "Xin chào! Tôi là trợ lý tư vấn thiết bị di động. Tôi có thể giúp bạn tìm kiếm thông tin về smartphone, tablet, laptop, tai nghe, loa và đồng hồ thông minh. Bạn có thể hỏi tôi về thông số kỹ thuật, tính năng, giá cả, địa điểm bán hoặc nhờ tôi tư vấn sản phẩm phù hợp với nhu cầu của bạn. Bạn cần tôi tư vấn gì hôm nay?",
+                        query_type: "WELCOME"
+                    });
+                } else {
+                    throw new Error(data.message || 'Không thể kết nối với hệ thống');
+                }
+            } catch (error) {
+                console.error('Error initializing the system:', error);
+                systemReady = false;
+                updateSystemStatus(false, error.message);
+
+                // Show error message
+                const errorMsg = `Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối và thử lại. (${error.message})`;
+                loadingScreen.innerHTML = `
+                    <div style="text-align: center;">
+                        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="var(--error-color)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="12" y1="8" x2="12" y2="12"></line>
+                            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                        </svg>
+                        <h2 style="color: var(--error-color);">Lỗi kết nối</h2>
+                        <p>${errorMsg}</p>
+                        <button onclick="window.location.reload()" style="margin-top: 20px; padding: 8px 16px; background-color: var(--primary-color); color: white; border: none; border-radius: 4px; cursor: pointer;">Thử lại</button>
+                    </div>
+                `;
+            }
+        }
+
+        /**
+         * Auto resize textarea based on content
+         */
+        function autoResizeTextarea() {
+            chatInput.style.height = 'auto';
+            chatInput.style.height = (chatInput.scrollHeight) + 'px';
+        }
+
+        /**
+         * Handle input keydown event (Enter to send)
+         */
+        function handleInputKeydown(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        }
+
+        /**
+         * Send message to the server
+         */
+        async function sendMessage() {
+            const message = chatInput.value.trim();
+            if (!message || isProcessing || !systemReady) return;
+
+            // Start chat if not started
+            if (!chatStarted) {
+                startChat();
+            }
+
+            // Add user message to chat
+            addUserMessage(message);
+
+            // Clear input and reset height
+            chatInput.value = '';
+            chatInput.style.height = 'auto';
+
+            // Show typing indicator
+            showTypingIndicator();
+
+            try {
+                isProcessing = true;
+
+                // Hiển thị tiến trình chi tiết hơn
+                const processingSteps = [
+                    "Đang kết nối đến hệ thống...",
+                    "Đang phân tích câu hỏi...",
+                    "Đang tìm kiếm thông tin...",
+                    "Đang tổng hợp kết quả..."
+                ];
+
+                let currentStep = 0;
+                const progressInterval = setInterval(() => {
+                    if (currentStep < processingSteps.length) {
+                        updateInputStatus(processingSteps[currentStep]);
+                        currentStep++;
+                    }
+                }, 1000);
+
+                // Prepare request
+                const requestData = {
+                    query: message,
+                    session_id: SESSION_ID,
+                    debug: DEBUG_MODE
+                };
+
+                // Send request to API
+                const response = await fetch(`${API_URL}/query`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(requestData)
+                });
+
+                // Clear progress interval
+                clearInterval(progressInterval);
+
+                // Parse response
+                const data = await response.json();
+
+                // Handle error
+                if (data.status === 'error') {
+                    throw new Error(data.message || 'Unknown error');
+                }
+
+                // Hide typing indicator
+                hideTypingIndicator();
+
+                // Add bot response to chat
+                addBotMessage(data);
+
+                // Update conversation history
+                conversationHistory.push({
+                    role: 'assistant',
+                    content: data.response
+                });
+
+                // Debug logs
+                if (DEBUG_MODE && data.debug) {
+                    console.log('Debug info:', data.debug);
+                }
+            } catch (error) {
+                console.error('Error sending message:', error);
+                hideTypingIndicator();
+
+                // Show error message
+                addBotMessage({
+                    response: `Xin lỗi, đã xảy ra lỗi khi xử lý câu hỏi của bạn: ${error.message}`,
+                    query_type: 'ERROR'
+                });
+            } finally {
+                isProcessing = false;
+                updateInputStatus('');
+            }
+        }
+
+        /**
+         * Add user message to chat
+         */
+        function addUserMessage(message) {
+            const messageRow = document.createElement('div');
+            messageRow.className = 'message-row';
+
+            messageRow.innerHTML = `
+                <div class="message user-message">
+                    <div class="avatar user-avatar">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 11C14.2091 11 16 9.20914 16 7C16 4.79086 14.2091 3 12 3C9.79086 3 8 4.79086 8 7C8 9.20914 9.79086 11 12 11Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M12 14C8.13401 14 5 17.134 5 21H19C19 17.134 15.866 14 12 14Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </div>
+                    <div class="message-content">
+                        <p>${escapeHtml(message)}</p>
+                    </div>
+                </div>
+            `;
+
+            chatContainer.appendChild(messageRow);
+            scrollToBottom();
+
+            // Add to conversation history
+            conversationHistory.push({
+                role: 'user',
+                content: message
+            });
+        }
+
+        /**
+         * Add bot message to chat
+         */
+        function addBotMessage(data) {
+            const messageRow = document.createElement('div');
+            messageRow.className = 'message-row';
+
+            // Format message with markdown
+            const formattedContent = marked.parse(data.response);
+
+            // Create footer based on query type
+            let footer = '';
+            if (data.query_type && data.query_type !== 'WELCOME') {
+                // Create metadata for footer
+                const metadata = [];
+
+                // Add query type
+                const queryTypeDisplay = getQueryTypeDisplay(data.query_type);
+                if (queryTypeDisplay) {
+                    metadata.push(`<span>${queryTypeDisplay}</span>`);
+                }
+
+                // Add field info for GENERAL queries
+                if (data.query_type === 'GENERAL' && data.field) {
+                    const fieldDisplay = getFieldDisplay(data.field);
+                    metadata.push(`<span>Trường tìm kiếm: ${fieldDisplay}</span>`);
+                }
+
+                // Add product name for SPECIFIC queries
+                if (data.query_type.includes('SPECIFIC') && data.product_name) {
+                    metadata.push(`<span>Sản phẩm: ${data.product_name}</span>`);
+                }
+
+                // Add processing time
+                if (data.processing_time) {
+                    metadata.push(`<span>${data.processing_time}</span>`);
+                }
+
+                // Create footer if there's metadata
+                if (metadata.length > 0) {
+                    footer = `<div class="message-footer">${metadata.join(' • ')}</div>`;
+                }
+            }
+
+            // Create message HTML
+            messageRow.innerHTML = `
+                <div class="message assistant-message">
+                    <div class="avatar assistant-avatar">
+                        <svg width="20" height="20" viewBox="0 0 41 41" fill="none" xmlns="http://www.w3.org/2000/svg" stroke-width="1.5" class="h-6 w-6">
+                            <path d="M37.5324 16.8707C37.9808 15.5241 38.1363 14.0974 37.9886 12.6859C37.8409 11.2744 37.3934 9.91076 36.676 8.68622C35.6126 6.83404 33.9882 5.3676 32.0373 4.4985C30.0864 3.62941 27.9098 3.40259 25.8215 3.85078C24.8796 2.7893 23.7219 1.94125 22.4257 1.36341C21.1295 0.785575 19.7249 0.491269 18.3058 0.500197C16.1708 0.495044 14.0893 1.16803 12.3614 2.42214C10.6335 3.67624 9.34853 5.44666 8.6917 7.47815C7.30085 7.76286 5.98686 8.3414 4.8377 9.17505C3.68854 10.0087 2.73073 11.0782 2.02839 12.312C0.956464 14.1591 0.498905 16.2988 0.721698 18.4228C0.944492 20.5467 1.83612 22.5449 3.268 24.1293C2.81966 25.4759 2.66413 26.9026 2.81182 28.3141C2.95951 29.7256 3.40701 31.0892 4.12437 32.3138C5.18791 34.1659 6.8123 35.6322 8.76321 36.5013C10.7141 37.3704 12.8907 37.5973 14.9789 37.1492C15.9208 38.2107 17.0786 39.0587 18.3747 39.6366C19.6709 40.2144 21.0755 40.5087 22.4946 40.4998C24.6307 40.5054 26.7133 39.8321 28.4418 38.5772C30.1704 37.3223 31.4556 35.5506 32.1119 33.5179C33.5027 33.2332 34.8167 32.6547 35.9659 31.821C37.115 30.9874 38.0728 29.9178 38.7752 28.684C39.8458 26.8371 40.3023 24.6979 40.0789 22.5748C39.8556 20.4517 38.9639 18.4544 37.5324 16.8707ZM22.4978 37.8849C20.7443 37.8874 19.0459 37.2733 17.6994 36.1501C17.7601 36.117 17.8666 36.0586 17.936 36.0161L25.9004 31.4156C26.1003 31.3019 26.2663 31.137 26.3813 30.9378C26.4964 30.7386 26.5563 30.5124 26.5549 30.2825V19.0542L29.9213 20.998C29.9389 21.0068 29.9541 21.0198 29.9656 21.0359C29.977 21.052 29.9842 21.0707 29.9867 21.0902V30.3889C29.9842 32.375 29.1946 34.2791 27.7909 35.6841C26.3872 37.0892 24.4838 37.8806 22.4978 37.8849Z" fill="currentColor"></path>
+                        </svg>
+                    </div>
+                    <div class="message-content">
+                        ${formattedContent}
+                        ${footer}
+                    </div>
+                </div>
+            `;
+
+            chatContainer.appendChild(messageRow);
+
+            // Check if we need to add a map
+            if (data.has_map && data.raw_sql_results) {
+                addMapToMessage(messageRow, data.raw_sql_results);
+            }
+
+            // Đảm bảo cuộn xuống sau khi nội dung đã được render
+            setTimeout(() => {
+                scrollToBottom();
+                // Highlight lại code sau khi DOM đã được cập nhật
+                document.querySelectorAll('pre code').forEach((block) => {
+                    hljs.highlightElement(block);
+                });
+            }, 100);
+        }
+
+        /**
+         * Add map to message if available
+         */
+        function addMapToMessage(messageElement, sqlResults) {
+            if (!sqlResults || !Array.isArray(sqlResults)) return;
+
+            // Find the first result with a map field
+            const resultWithMap = sqlResults.find(result =>
+                result.map && result.map !== 'None' && result.map.includes('<iframe')
+            );
+
+            if (resultWithMap) {
+                const messageContent = messageElement.querySelector('.message-content');
+
+                // Create map container
+                const mapContainer = document.createElement('div');
+                mapContainer.className = 'map-container';
+                mapContainer.innerHTML = resultWithMap.map;
+
+                // Add to message content
+                messageContent.appendChild(mapContainer);
+            }
+        }
+
+        /**
+         * Show typing indicator
+         */
+        function showTypingIndicator() {
+            if (typingIndicator) {
+                typingIndicator.classList.remove('hidden');
+                scrollToBottom();
+            }
+        }
+
+        /**
+         * Hide typing indicator
+         */
+        function hideTypingIndicator() {
+            if (typingIndicator) {
+                typingIndicator.classList.add('hidden');
+            }
+        }
+
+        /**
+         * Start chat (hide welcome screen, show chat container)
+         */
+        function startChat() {
+            if (!chatStarted) {
+                welcomeScreen.classList.add('hidden');
+                chatContainer.classList.remove('hidden');
+                chatStarted = true;
+            }
+        }
+
+        /**
+         * Start new chat
+         */
+        async function startNewChat() {
+            try {
+                // Reset conversation on server
+                await fetch(`${API_URL}/reset`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ session_id: SESSION_ID })
+                });
+
+                // Clear chat container
+                chatContainer.innerHTML = '';
+
+                // Reset state
+                conversationHistory = [];
+                chatStarted = false;
+
+                // Hide chat, show welcome screen
+                chatContainer.classList.add('hidden');
+                welcomeScreen.classList.remove('hidden');
+
+                // Add welcome message
+                addBotMessage({
+                    response: "Xin chào! Tôi là trợ lý tư vấn thiết bị di động. Tôi có thể giúp bạn tìm kiếm thông tin về smartphone, tablet, laptop, tai nghe, loa và đồng hồ thông minh. Bạn có thể hỏi tôi về thông số kỹ thuật, tính năng, giá cả, địa điểm bán hoặc nhờ tôi tư vấn sản phẩm phù hợp với nhu cầu của bạn. Bạn cần tôi tư vấn gì hôm nay?",
+                    query_type: "WELCOME"
+                });
+
+            } catch (error) {
+                console.error('Error starting new chat:', error);
+                alert('Lỗi khi tạo cuộc trò chuyện mới: ' + error.message);
+            }
+        }
+
+        /**
+         * Clear conversation history
+         */
+        function clearHistory() {
+            if (confirm('Bạn có chắc chắn muốn xóa toàn bộ lịch sử trò chuyện?')) {
+                // Start new chat
+                startNewChat();
+            }
+        }
+
+        /**
+         * Check system status
+         */
+        async function checkSystemStatus() {
+            try {
+                const response = await fetch(`${API_URL}/health`);
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    systemReady = true;
+                    updateSystemStatus(true);
+
+                    // Format system status for message
+                    const vectorStoreStatus = data.system_status?.vector_store === 'OK' ?
+                        '✅ Vector Store: Hoạt động tốt' :
+                        `❌ Vector Store: ${data.system_status?.vector_store || 'Lỗi'}`;
+
+                    const sqlStatus = data.system_status?.sql === 'OK' ?
+                        '✅ SQL Database: Hoạt động tốt' :
+                        `❌ SQL Database: ${data.system_status?.sql || 'Lỗi'}`;
+
+                    // Start chat if not started
+                    if (!chatStarted) {
+                        startChat();
+                    }
+
+                    // Add system status message
+                    addBotMessage({
+                        response: `### Trạng thái hệ thống\n\n${vectorStoreStatus}\n\n${sqlStatus}\n\nHệ thống hoạt động bình thường và sẵn sàng xử lý câu hỏi của bạn.`,
+                        query_type: "SYSTEM"
+                    });
+                } else {
+                    throw new Error(data.message || 'Không thể kiểm tra trạng thái hệ thống');
+                }
+            } catch (error) {
+                console.error('Error checking system status:', error);
+                systemReady = false;
+                updateSystemStatus(false, error.message);
+
+                // Add error message
+                if (chatStarted) {
+                    addBotMessage({
+                        response: `❌ Lỗi khi kiểm tra trạng thái hệ thống: ${error.message}`,
+                        query_type: "ERROR"
+                    });
+                }
+            }
+        }
+
+        /**
+         * Update system status indicator
+         */
+        function updateSystemStatus(isOk, errorMsg = null) {
+            if (statusIndicator && statusText) {
+                if (isOk) {
+                    statusIndicator.style.backgroundColor = 'var(--success-color)';
+                    statusText.textContent = 'Hệ thống hoạt động bình thường';
+                } else {
+                    statusIndicator.style.backgroundColor = 'var(--error-color)';
+                    statusText.textContent = errorMsg || 'Hệ thống đang gặp sự cố';
+                }
+            }
+        }
+
+        /**
+         * Update input status text
+         */
+        function updateInputStatus(text) {
+            if (inputStatus) {
+                inputStatus.textContent = text;
+            }
+        }
+
+        /**
+         * Scroll chat container to bottom
+         */
+        function scrollToBottom() {
+            // Thêm timeout nhỏ để đảm bảo DOM đã được cập nhật
+            setTimeout(() => {
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+            }, 10);
+        }
+
+        /**
+         * Get display text for query type
+         */
+        function getQueryTypeDisplay(queryType) {
+            const queryTypeMap = {
+                'GENERAL': 'Câu hỏi chung',
+                'SPECIFIC-VECTOR': 'Thông tin sản phẩm',
+                'SPECIFIC-SQL': 'Giá/Địa điểm bán',
+                'SPECIFIC-HYBRID': 'Thông tin kết hợp',
+                'UNRELATED': 'Câu hỏi khác',
+                'ERROR': 'Lỗi xử lý',
+                'WELCOME': '',
+                'SYSTEM': ''
+            };
+
+            return queryTypeMap[queryType] || queryType;
+        }
+
+        /**
+         * Get display text for field
+         */
+        function getFieldDisplay(field) {
+            const fieldMap = {
+                'product_name': 'Tên sản phẩm',
+                'product_info': 'Thông tin sản phẩm',
+                'warranty': 'Bảo hành',
+                'technical': 'Thông số kỹ thuật',
+                'feature': 'Tính năng nổi bật',
+                'content': 'Mô tả chi tiết',
+                'full_promotion': 'Khuyến mãi'
+            };
+
+            return fieldMap[field] || field;
+        }
+
+        /**
+         * Escape HTML to prevent XSS
+         */
+        function escapeHtml(text) {
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            };
+
+            return text.replace(/[&<>"']/g, m => map[m]);
+        }
+
+        // Set up marked.js options
+        marked.setOptions({
+            highlight: function(code, lang) {
+                if (lang && hljs.getLanguage(lang)) {
+                    return hljs.highlight(code, { language: lang }).value;
+                } else {
+                    return hljs.highlightAuto(code).value;
+                }
+            },
+            breaks: true,
+            gfm: true
+        });
+    </script>
+</body>
+</html>
