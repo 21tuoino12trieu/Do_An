@@ -41,6 +41,13 @@ class DirectRAG:
             base_url="https://api.sv2.llm.ai.vn/v1"
         )
 
+        # Thêm biến lưu trữ ngữ cảnh hội thoại
+        self.conversation_context = {
+            "last_product_name": None,
+            "last_query_type": None,
+            "last_query": None
+        }
+
         print("DirectRAG đã khởi tạo thành công")
 
     def call_openai(self, prompt, temperature=0.1, model="gpt-4o", stream=False, callback=None):
@@ -746,13 +753,68 @@ class DirectRAG:
             "raw_sql_results": sql_results
         }
 
-    def process_query(self, user_query):
+    def _resolve_references(self, user_query):
+        """Giải quyết các tham chiếu trong câu hỏi (như 'nó', 'chúng', etc.)"""
+        print("\n===== BẮT ĐẦU GIẢI QUYẾT THAM CHIẾU =====")
+        print(f"Câu hỏi gốc: '{user_query}'")
+        print(f"Ngữ cảnh hiện tại: '{self.conversation_context}")
+
+        # Nếu không có sản phẩm trước đó thì trả về câu hỏi gốc
+        if not self.conversation_context["last_product_name"]:
+            print("Không có sản phẩm trong ngữ cảnh, giữ nguyên câu hỏi")
+            return user_query
+
+        # Sử dụng prompt để xem câu hỏi đã có tham chiếu hay không
+        reference_check_prompt = f"""
+        Kiểm tra xem câu hỏi sau có chứa đại từ tham chiếu (như "nó", "chúng", "thiết bị này", "sản phẩm đó", "sản phẩm đấy" v.v.) không:
+
+        "{user_query}"
+
+        Chỉ trả lời YES hoặc NO.
+        """
+
+        has_reference = self.call_openai(reference_check_prompt, temperature=0.1).strip().upper()
+        print(f"Kết quả trả về trong tham chiếu {has_reference}")
+
+        if has_reference != "YES":
+            print("Câu hỏi không chứa tham chiếu, giữ nguyên câu hỏi.")
+            return user_query
+
+        # Nếu có tham chiếu thì thay thế bằng tên sản phẩm trước đó
+        print(
+            f"Câu hỏi chứa tham chiếu, thay thế bằng tên sản phẩm trước đó: '{self.conversation_context['last_product_name']}'")
+        reference_resolution_prompt = f"""
+                Hãy viết lại câu hỏi sau đây, thay thế các đại từ tham chiếu (như "nó", "chúng", "thiết bị này", v.v.) bằng tên sản phẩm cụ thể:
+
+                Câu hỏi: "{user_query}"
+                Tên sản phẩm: {self.conversation_context["last_product_name"]}
+
+                Chỉ trả về câu hỏi đã được viết lại, không thêm bất kỳ giải thích nào.
+                """
+        resolved_query = self.call_openai(reference_resolution_prompt, temperature=0.1)
+        return resolved_query
+
+    def _update_conversation_context(self, query_result):
+        """Cập nhật ngữ cảnh hội thoại dựa trên kết quả xử lý câu hỏi hiện tại"""
+        if "product_name" in query_result and query_result["product_name"]:
+            self.conversation_context["last_product_name"] = query_result["product_name"]
+            print("Đã cập nhật tên sản phẩm")
+        else:
+            print("Không tìm thấy tên sản phẩm trong truy vấn")
+        self.conversation_context["last_query_type"] = query_result["query_type"]
+        self.conversation_context["last_query"] = query_result["clarified_query"]
+
+    def process_query(self, user_query, stream=False, callback=None):
         """Xử lý câu hỏi người dùng - điểm vào chính của hệ thống"""
         print(f"Câu hỏi đầu vào người dùng: {user_query}")
 
         try:
+            # Xử lý tham chiếu trong hội thoại
+            resolved_query = self._resolve_references(user_query)
+            print(f"Câu hỏi sau khi giải quyết tham chiếu: {resolved_query}")
+
             # 1. Làm rõ câu hỏi
-            clarified_query = self.clarify_query(user_query)
+            clarified_query = self.clarify_query(resolved_query)
             print(f"Câu hỏi đã làm rõ: {clarified_query}")
 
             # 2. Phân loại domain (RELATED/UNRELATED)
@@ -760,33 +822,37 @@ class DirectRAG:
             print(f"Domain truy vấn: {query_domain}")
 
             if query_domain == "UNRELATED":
-                return self.handle_unrelated_query(user_query, clarified_query)
+                result = self.handle_unrelated_query(user_query, clarified_query)
+                self._update_conversation_context(result)
+                return result
 
             # 3. Phân loại câu hỏi theo cấu trúc mới
             query_type = self.classify_query(clarified_query)
             print(f"Loại truy vấn: {query_type}")
 
             # 4. Xử lý theo loại câu hỏi
+            result = None
             if query_type == "GENERAL":
                 # Câu hỏi chung chung về nhiều sản phẩm
-                return self.handle_general_query(user_query, clarified_query)
-
+                result = self.handle_general_query(user_query, clarified_query)
             elif query_type == "SPECIFIC-VECTOR":
                 # Câu hỏi về một sản phẩm cụ thể, cần thông tin từ vector store
-                return self.handle_specific_vector_query(user_query, clarified_query)
-
+                result = self.handle_specific_vector_query(user_query, clarified_query)
             elif query_type == "SPECIFIC-SQL":
                 # Câu hỏi về một sản phẩm cụ thể, cần thông tin từ SQL (giá, địa điểm)
-                return self.handle_specific_sql_query(user_query, clarified_query)
-
+                result = self.handle_specific_sql_query(user_query, clarified_query)
             elif query_type == "SPECIFIC-HYBRID":
                 # Câu hỏi về một sản phẩm cụ thể, cần kết hợp cả hai loại thông tin
-                return self.handle_specific_hybrid_query(user_query, clarified_query)
-
+                result = self.handle_specific_hybrid_query(user_query, clarified_query)
             else:
                 # Loại truy vấn không xác định, mặc định xử lý như câu hỏi chung
                 print(f"Loại truy vấn không xác định: {query_type}, xử lý mặc định")
-                return self.handle_general_query(user_query, clarified_query)
+                result = self.handle_general_query(user_query, clarified_query)
+
+            # Cập nhật ngữ cảnh hội thoại
+            self._update_conversation_context(result)
+
+            return result
 
         except Exception as e:
             error_message = f"Đã xảy ra lỗi khi xử lý truy vấn: {str(e)}"
