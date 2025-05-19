@@ -1,8 +1,11 @@
 from vector_store import VectorStore
 import sqlite3
 from openai import OpenAI
-import google.generativeai as genai
-from config import DATABASE_PATH
+from config import (
+    DATABASE_PATH,
+)
+
+
 from prompts import (
     QUERY_CLARIFICATION_PROMPT,
     QUERY_CLASSIFICATION_PROMPT,
@@ -33,12 +36,10 @@ class DirectRAG:
         self.embedding_model = self.vector_store._load_embedding_model()
         self.reranker = self.vector_store.reranker
 
-        genai.configure(api_key="AIzaSyBLEHXcGtxM5EKA2vE53ooMddz2ELYVatM")
-
         # Khởi tạo OpenAI client
         self.client = OpenAI(
-            api_key="sk-DA3F9KX5B3sWaspdA1B9Cc9069Ab416fAa01C50316Ac17Ff",
-            base_url="https://api.sv2.llm.ai.vn/v1"
+            api_key="sk-OnkcO47Ab2P8TKCg893d858a16F846A6949b856bDc662162",
+            base_url="https://api.sv2.llm.ai.vn/v1",
         )
 
         # Thêm biến lưu trữ ngữ cảnh hội thoại
@@ -50,7 +51,7 @@ class DirectRAG:
 
         print("DirectRAG đã khởi tạo thành công")
 
-    def call_openai(self, prompt, temperature=0.1, model="gpt-4o", stream=False, callback=None):
+    def call_openai(self, prompt, temperature=0.1, model="openai:gpt-4.1", stream=False, callback=None):
         """Gọi OpenAI API"""
         try:
             response = self.client.chat.completions.create(
