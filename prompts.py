@@ -158,6 +158,7 @@ Ví dụ:
 - Từ "thông số kỹ thuật iPhone 13 Pro Max" → "iPhone 13 Pro Max"
 - Từ "Samsung Galaxy S22 Ultra mua ở đâu" → "Samsung Galaxy S22 Ultra"
 - Từ "Máy Tính Bảng Lenovo Tab M11 Wifi 8GB 128GB ZADB0162VN" -> "Lenovo Tab M11 Wifi 8GB 128GB ZADB0162VN"
+- Từ "Điện thoại iPhone 16e 128GB | Chính hãng VN/A" -> "iPhone 16e 128GB"
 
 **Yêu Cầu Đầu Ra BẮT BUỘC:**
 Chỉ trả về **duy nhất tên sản phẩm** đã trích xuất. Không thêm bất kỳ văn bản giới thiệu, giải thích, dấu câu trang trí, hoặc ký tự nào khác.
@@ -315,11 +316,9 @@ Hãy tạo một câu trả lời toàn diện kết hợp cả thông tin về 
 
 1. Mở đầu bằng việc xác nhận sản phẩm người dùng đang hỏi
 2. Cung cấp thông tin chi tiết về sản phẩm theo yêu cầu trong câu hỏi
-3. Cung cấp thông tin về giá (nếu có trong kết quả SQL)
-4. Liệt kê các địa điểm bán (nếu có trong kết quả SQL)
+3. Cung cấp thông tin về giá (Chỉ trả lời nếu có trong kết quả SQL)
+4. Liệt kê các địa điểm bán (Chỉ trả lời nếu có trong kết quả SQL)
 5. Kết thúc bằng một tóm tắt ngắn gọn
-
-Nếu có thông tin về bản đồ (map), hãy đề cập rằng "Bạn có thể xem vị trí cửa hàng trên bản đồ bên dưới".
 
 Câu trả lời phải được tổ chức tốt, hữu ích và đáp ứng đầy đủ yêu cầu của người dùng. Tối đa 800 từ.
 """
