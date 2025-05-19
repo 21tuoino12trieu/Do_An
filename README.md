@@ -6,7 +6,8 @@
 Hệ thống RAG (Retrieval Augmented Generation) được thiết kế để thu thập, xử lý và truy xuất thông tin sản phẩm từ các trang thương mại điện tử, cung cấp khả năng hỏi đáp thông minh về các sản phẩm.
 
 ## 📋 Tổng quan về Workflow của Hệ thống RAG
-![RAG System Workflow](.images/FlowWork.jpg)
+![RAG System Workflow](images/FlowWork.jpg)
+
 Hệ thống được xây dựng dựa trên một quy trình RAG toàn diện, bao gồm các giai đoạn chính sau:
 
 1. **Thu thập dữ liệu:** Crawl (thu thập) dữ liệu sản phẩm từ các trang web thương mại điện tử.
@@ -20,7 +21,7 @@ Hệ thống được xây dựng dựa trên một quy trình RAG toàn diện,
 ## 🔍 Phân tích chi tiết các giai đoạn trong Workflow
 
 ### 1. Giai đoạn 1: Thu thập dữ liệu
-![RAG System Database](.images/Database.jpg)
+![RAG System Database](images/Database.jpg)
 
 Giai đoạn này có nhiệm vụ thu thập thông tin chi tiết về các sản phẩm (điện thoại thông minh, máy tính bảng, laptop, tai nghe, loa, đồng hồ) từ các trang web thương mại điện tử.
 
@@ -184,3 +185,28 @@ streamlit run streamlit_app.py
 - **Frontend**: JavaScript
 - **LLM**: GPT-4o, GPT-o4 mini, GPT-4.1
 
+## Demo sản phẩm 
+
+### 1. Giao diện người dùng
+
+![RAG System Database](images/UI.png)
+
+### 2. Xử lí câu hỏi không liên quan
+
+![RAG System Database](images/Unrelated.png)
+
+### 3. Xử lí câu hỏi dạng tổng quát
+
+![RAG System Database](images/General.png)
+
+### 4. Xử lí câu hỏi về 1 hoặc nhiều trường thông tin của 1 sản phẩm cụ thể
+
+![RAG System Database](images/Specific%20Vector.png)
+
+### 5. Xử lí câu hỏi cần truy vấn đến SQL
+
+![RAG System Database](images/Specific%20SQL.png)
+
+### 6. Xử lí câu hỏi dạng Hybrid
+
+![RAG System Database](images/Specific%20Hybrid.png)
